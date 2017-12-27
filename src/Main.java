@@ -5,9 +5,7 @@ import java.util.Arrays;
 public class Main {
 
     public static void main(String[] args) {
-        NumberLookup lu = new NumberLookups();
-        WordHelper helper = new WordHelpers();
-        NumbersMap m = new NumbersMaps(helper, lu);
+        NumbersMap m = new NumbersMap();
 
         char[] d = "0000000000".toCharArray();
         assert (!m.get(d));
