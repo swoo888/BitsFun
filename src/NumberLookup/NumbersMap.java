@@ -2,16 +2,14 @@ package NumberLookup;
 
 public class NumbersMap {
     private static final long MAX_NUMBER = 9999999999L;
-    private Helper helper;
-    private NumberLookup anyUsedNumberLookup, allUsedNumberLookup;
+    private BitsManager bitsManager;
+    private NumberLookup anyUsedNumberLookup;
     private int[] data;
 
     public NumbersMap() {
-        helper = new Helper();
-        NumberLookup lu = new NumberLookup();
-        data = new int[helper.getArraySize(MAX_NUMBER)];
-        anyUsedNumberLookup = lu.build(data, helper);
-        allUsedNumberLookup = lu.build(data, helper);
+        bitsManager = new BitsManager();
+        data = new int[bitsManager.getArraySizeForNumber(MAX_NUMBER)];
+        anyUsedNumberLookup = (new NumberLookup(data, bitsManager)).buildLookups();
     }
 
     /**
@@ -21,11 +19,7 @@ public class NumbersMap {
      * @return char array of the first number that matches input param used.
      */
     public char[] get(boolean used) {
-        if (used) {
-            return anyUsedNumberLookup.getFirstNumber(true);
-        } else {
-            return allUsedNumberLookup.getFirstNumber(false);
-        }
+        return anyUsedNumberLookup.getNumberUsed(used);
     }
 
     /**
@@ -35,8 +29,8 @@ public class NumbersMap {
      * @return true if number is used, else false
      */
     public boolean get(char[] number) {
-        long n = getNumber(number);
-        return helper.getValue(data, n);
+        long n = parseNumber(number);
+        return bitsManager.getUsedForNumber(data, n);
     }
 
     /**
@@ -46,24 +40,23 @@ public class NumbersMap {
      * @param used:   the new status for the number.  True to indicate a number is used, False for unused.
      */
     public void set(char[] number, boolean used) {
-        long n = getNumber(number);
-        int pos = helper.updateValue(data, n, used);
-        anyUsedNumberLookup.update(pos, w -> w != 0);
-        allUsedNumberLookup.update(pos, w -> w == helper.getWordOnes());
+        long n = parseNumber(number);
+        int pos = bitsManager.setUsedForNumber(data, n, used);
+        anyUsedNumberLookup.updateLookups(pos, w -> w != 0);
     }
 
-    private long getNumber(char[] number) {
+    private long parseNumber(char[] number) {
         long n;
         try {
             n = Long.parseLong(String.valueOf(number));
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException(String.format("Invalid number: %s", String.valueOf(number)));
         }
-        checkNumber(n);
+        validateNumberInRange(n);
         return n;
     }
 
-    private void checkNumber(long number) {
+    private void validateNumberInRange(long number) {
         if (number < 0 || number > MAX_NUMBER) {
             throw new IllegalArgumentException(String.format("Only supports number from 0 to %d", MAX_NUMBER));
         }
