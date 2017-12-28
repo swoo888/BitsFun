@@ -1,101 +1,77 @@
 package NumberLookup;
 
+import BitArray.BitArray;
+
+import java.util.ArrayList;
 import java.util.function.IntPredicate;
 
-/**
- * This class manages the lookup chain for numbers.  It is building layers of int arrays.  With the first
- * layer being the top most array for the underlying data.  Each layer below is reduced by int size of 32.
- * Such that first bit of layer N+1 is referring to first word (32bits) of layer N.
- * The last layer is of one int.
+/***
+ * A lookup class for a BitArray.  It uses layers of BitArray each containing values of status of its higher layer.
+ * for example: each position at BitArray at layer 1 will contain the status value for position 0 to 31
+ * at BitArray layer 0.
  */
 public class NumberLookup {
-    /**
-     * topNode is the node pointing to higher layer. each NumberLookup object will have a topNode pointing to its higher layer
-     * and a botNode pointing to next lower layer.  with the topMost NumberLookup having a topNode of null, and the lowest
-     * layer having botNode of null
+    /***
+     * ArrayList of BitArray to build a constant time lookup layers for numbers. When we try to look up
+     * a number of certain value, we will search from bottum of the list.
      */
-    private NumberLookup topNode; // the top node, pointing to the NumberLookup object of next higher layer
-    private NumberLookup botNode; // the bottum node, pointing to the NumberLookup object of next lower layer
-    private NumberLookup tail; // the NumberLookup object where we start searching layer by layer upward
-    private BitsManager bitsManager;
-    private int[] data;
+    ArrayList<BitArray> numberBitsLookup = new ArrayList<>();
 
-    public NumberLookup(int[] data, BitsManager bitsManager, NumberLookup topNode){
-        this.bitsManager = bitsManager;
-        this.data = data;
-        this.topNode = topNode;
-    }
-
-    public NumberLookup(int[] data, BitsManager bitsManager) {
-        this.data = data;
-        this.bitsManager = bitsManager;
+    public NumberLookup(BitArray numberBits) {
+        buildLookups(numberBits);
     }
 
     /***
-     * builds the lookup layers
-     * @return the current object after lookup layers is built
+     * Builds a lookup layer for containt time lookup of values
+     * @param numberBits: the BitArray that we are  building a lookup layer
      */
-    public NumberLookup buildLookups(){
-        NumberLookup cur = this;
-        int size = bitsManager.getArraySizeForNumber(cur.data.length);
-        while (size >= 1) {
-            int[] dataLookup = new int[size];
-            NumberLookup lu = new NumberLookup(dataLookup, bitsManager, cur);
-            cur.botNode = lu;
-            cur = lu;
+    private void buildLookups(BitArray numberBits) {
+        BitArray lookupBits = numberBits;
+        while (true) {
+            numberBitsLookup.add(lookupBits);
+            int size = lookupBits.getSize();
             if (size <= 1) {
                 break;
             }
-            size = bitsManager.getArraySizeForNumber(size);
-        }
-        tail = cur;  // saves the tail value for easier searching from bottum up
-        return this;
-    }
-
-    /**
-     * Updates lookup layers when data is changed
-     *
-     * @param pos:             the position that is changed
-     * @param updatePredicate: a predicate to retrieve bit value to set
-     */
-    public void updateLookups(int pos, IntPredicate updatePredicate) {
-        NumberLookup cur = this;
-        while (cur != null) {
-            if (cur.botNode == null)
-                return;
-            int value = cur.data[pos];
-            boolean used = updatePredicate.test(value);
-            pos = bitsManager.setUsedForNumber(cur.botNode.data, pos, used);
-            cur = cur.botNode;
+            lookupBits = new BitArray(size);
         }
     }
 
-    /**
-     * look through all layers by indexing to find a number that is "used"
-     *
-     * @param used: true for used, false for unused
-     * @return the number that is used if used is true, else unused
+    /***
+     * Updates the lookup layers when a number value is changed
+     * @param number: the number whose value was changed
+     * @param lookupUpdatePredicate: a predicate to get the next layer value
      */
-    public char[] getNumberUsed(boolean used) {
-        NumberLookup cur = tail;
-        int pos = 0;
-        while (cur != null) {
-            if (cur.topNode == null)
-                break;
-            int upperPos = bitsManager.getUpperLayerPosUsed(pos, cur.data, used);
-            if (upperPos < 0) {
-                pos = -1;
-                break;
+    public void updateLookups(long number, IntPredicate lookupUpdatePredicate) {
+        int size = numberBitsLookup.size();
+        // loop through list, each upper one updates the one below.  so the last one is size-2, which updates
+        // item at size-1
+        for (int i = 0; i <= size - 2; i++) {
+            BitArray numberBits = numberBitsLookup.get(i);
+            boolean value = numberBits.getPredicateValueForNumber(number, lookupUpdatePredicate);
+            int numberNext = (int) (number / numberBits.getWordSize());
+            BitArray numberBitsNext = numberBitsLookup.get(i + 1);
+            numberBitsNext.setBitValue(numberNext, value);
+            number = numberNext;
+        }
+    }
+
+    /***
+     * Gets the first number that has the value "used"
+     * @param used: the value type of number to get.  True for used number, False for unused number
+     * @return char[] of first number found, or null if no number has value "used"
+     */
+    public char[] getFirstNumberUsed(boolean used) {
+        int size = numberBitsLookup.size();
+        long number = 0;
+        for (int i = size - 1; i >= 0; i--) {
+            BitArray numberBits = numberBitsLookup.get(i);
+            number = number * numberBits.getWordSize();
+            number = numberBits.getFirstPositionWithValue(used, number, numberBits.getWordSize());
+            if (number < 0) {
+                return null;
             }
-            pos = upperPos;
-            cur = cur.topNode;
         }
-        if (pos < 0) {
-            return null;
-        }
-        long number = bitsManager.getNumberUsed(data[pos], pos, used);
-        if (number < 0)
-            return null;
         return String.format("%010d", number).toCharArray();
     }
 }

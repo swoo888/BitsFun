@@ -1,48 +1,53 @@
 package NumberLookup;
 
+import BitArray.BitArray;
+
 public class NumbersMap {
     private static final long MAX_NUMBER = 9999999999L;
-    private BitsManager bitsManager;
-    private NumberLookup anyUsedNumberLookup;
-    private int[] data;
+    private NumberLookup usedNumberLookup;
+    private NumberLookup unusedNumberLookup;
+    private BitArray numberBitsArray;
 
     public NumbersMap() {
-        bitsManager = new BitsManager();
-        data = new int[bitsManager.getArraySizeForNumber(MAX_NUMBER)];
-        anyUsedNumberLookup = (new NumberLookup(data, bitsManager)).buildLookups();
+        numberBitsArray = new BitArray(MAX_NUMBER);
+        usedNumberLookup = new NumberLookup(numberBitsArray);
+        unusedNumberLookup = new NumberLookup(numberBitsArray);
     }
 
     /**
-     * Constant time look up of the first number that matches boolean condition "used".
+     * Constant time look up of the first number that has value "used"
      *
-     * @param used: type of number to get.  True for first number that is used.  False for first number that is not used.
-     * @return char array of the first number that matches input param used.
+     * @param used: true for used number, false for unused number
+     * @return char array of the first number that matches condition "used"
      */
     public char[] get(boolean used) {
-        return anyUsedNumberLookup.getNumberUsed(used);
+        if (used)
+            return usedNumberLookup.getFirstNumberUsed(true);
+        return unusedNumberLookup.getFirstNumberUsed(false);
     }
 
     /**
-     * Constant time look up of the current status of a number.
+     * Constant time look up of the current value of a number.
      *
-     * @param number: the number to search
+     * @param number: the number of interest
      * @return true if number is used, else false
      */
     public boolean get(char[] number) {
         long n = parseNumber(number);
-        return bitsManager.getUsedForNumber(data, n);
+        return numberBitsArray.getBitValue(n);
     }
 
     /**
-     * Constant time to set a number's "used" status
+     * Sets the number value to used
      *
-     * @param number: the number to set its status
-     * @param used:   the new status for the number.  True to indicate a number is used, False for unused.
+     * @param number: the number of interest
+     * @param used:   True for used, False for unused
      */
     public void set(char[] number, boolean used) {
         long n = parseNumber(number);
-        int pos = bitsManager.setUsedForNumber(data, n, used);
-        anyUsedNumberLookup.updateLookups(pos, w -> w != 0);
+        numberBitsArray.setBitValue(n, used);
+        usedNumberLookup.updateLookups(n, w -> w != 0);
+        unusedNumberLookup.updateLookups(n, w -> w == ~0);
     }
 
     private long parseNumber(char[] number) {
