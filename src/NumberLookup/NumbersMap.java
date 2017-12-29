@@ -1,17 +1,18 @@
 package NumberLookup;
 
 import BitArray.BitArray;
+import BitArray.BitArrays;
 
 public class NumbersMap {
     private static final long MAX_NUMBER = 9999999999L;
-    private NumberLookup usedNumberLookup;
-    private NumberLookup unusedNumberLookup;
+    private NumberLookup usedNumberLookups;
+    private NumberLookup unusedNumberLookups;
     private BitArray numberBitsArray;
 
     public NumbersMap() {
-        numberBitsArray = new BitArray(MAX_NUMBER);
-        usedNumberLookup = new NumberLookup(numberBitsArray);
-        unusedNumberLookup = new NumberLookup(numberBitsArray);
+        numberBitsArray = new BitArrays(MAX_NUMBER);
+        usedNumberLookups = new NumberLookups(numberBitsArray);
+        unusedNumberLookups = new NumberLookups(numberBitsArray);
     }
 
     /**
@@ -22,8 +23,8 @@ public class NumbersMap {
      */
     public char[] get(boolean used) {
         if (used)
-            return usedNumberLookup.getFirstNumberUsed(true);
-        return unusedNumberLookup.getFirstNumberUsed(false);
+            return usedNumberLookups.getFirstNumberUsed(true);
+        return unusedNumberLookups.getFirstNumberUsed(false);
     }
 
     /**
@@ -46,8 +47,26 @@ public class NumbersMap {
     public void set(char[] number, boolean used) {
         long n = parseNumber(number);
         numberBitsArray.setBitValue(n, used);
-        usedNumberLookup.updateLookups(n, w -> w != 0);
-        unusedNumberLookup.updateLookups(n, w -> w == ~0);
+        usedNumberLookups.updateLookups(n, this::anyValueUsed);
+        unusedNumberLookups.updateLookups(n, this::allValuesUsed);
+    }
+
+    private boolean anyValueUsed(boolean[] values) {
+        for (boolean b : values) {
+            if (b) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean allValuesUsed(boolean[] values) {
+        for (boolean b : values) {
+            if (!b) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private long parseNumber(char[] number) {

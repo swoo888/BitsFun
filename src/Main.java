@@ -1,4 +1,4 @@
-import NumberLookup.*;
+import NumberLookup.NumbersMap;
 
 import java.util.Arrays;
 
@@ -28,9 +28,9 @@ public class Main {
         m.set(d3, false);
         assert (Arrays.equals(m.get(true), d6));
 
-        assert(Arrays.equals(m.get(false), "0000000000".toCharArray()));
+        assert (Arrays.equals(m.get(false), "0000000000".toCharArray()));
         m.set("0000000000".toCharArray(), true);
-        assert(Arrays.equals(m.get(false), "0000000001".toCharArray()));
+        assert (Arrays.equals(m.get(false), "0000000001".toCharArray()));
     }
 
     private static void testNumber(NumbersMap m, String number) {
