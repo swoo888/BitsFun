@@ -16,7 +16,7 @@ public class BitArrays implements BitArray {
      * @return BitArray object
      */
     @Override
-    public BitArray makeNew(long number) {
+    public BitArray newBitArray(long number) {
         return new BitArrays(number);
     }
 

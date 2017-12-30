@@ -20,7 +20,7 @@ public interface BitArray {
      * @param number: number of items
      * @return BitArray object
      */
-    BitArray makeNew(long number);
+    BitArray newBitArray(long number);
 
 
     boolean[] getValuesInRange(long position, int count);

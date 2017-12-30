@@ -34,7 +34,7 @@ public class NumberLookups implements NumberLookup {
             if (numberOfItems <= 1) {
                 break;
             }
-            lookupBits = lookupBits.makeNew(numberOfItems);
+            lookupBits = lookupBits.newBitArray(numberOfItems);
         }
     }
 
